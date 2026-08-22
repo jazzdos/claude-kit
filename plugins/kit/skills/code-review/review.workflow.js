@@ -12,13 +12,13 @@ export const meta = {
 const diffRef = args.diffRef ?? 'main'
 const ledgerText = args.ledger ? JSON.stringify(args.ledger) : 'none'
 // Sonnet-first: measured across 6 weeks of runs, 69% of review agents return
-// zero actionable findings — Opus everywhere was paying frontier rates for
-// "LGTM". Architecture keeps Opus as the one deep-judgment safety net.
+// zero actionable findings — Fable everywhere was paying frontier rates for
+// "LGTM". Architecture keeps Fable as the one deep-judgment safety net.
 const DIMS = args.reviewDims ?? [
-  { key: 'correctness', focus: 'logic errors, bugs, broken edge cases, race conditions', model: 'sonnet', effort: 'high' },
-  { key: 'quality', focus: 'separation of concerns, DRY, naming, error handling, maintainability', model: 'sonnet', effort: 'high' },
-  { key: 'tests', focus: 'tests verify real behavior (not mocks), edge cases covered, all passing', model: 'sonnet', effort: 'high' },
-  { key: 'security', focus: 'injection, auth, secrets, unsafe operations', model: 'sonnet', effort: 'high' },
+  { key: 'correctness', focus: 'logic errors, bugs, broken edge cases, race conditions', model: 'sonnet', effort: 'medium' },
+  { key: 'quality', focus: 'separation of concerns, DRY, naming, error handling, maintainability', model: 'sonnet', effort: 'medium' },
+  { key: 'tests', focus: 'tests verify real behavior (not mocks), edge cases covered, all passing', model: 'sonnet', effort: 'medium' },
+  { key: 'security', focus: 'injection, auth, secrets, unsafe operations', model: 'sonnet', effort: 'medium' },
   { key: 'architecture', focus: 'plan/design alignment, module boundaries, sound abstractions, scalability', model: 'fable', effort: 'high' },
 ]
 
@@ -58,7 +58,7 @@ const reviewed = await pipeline(
   (r, d) => parallel(((r && r.findings) || []).map((f) => () =>
     agent(
       `Adversarially check whether this ${d.key} finding is REAL (not a false positive): "${f.issue}" at ${f.file ?? '?'}:${f.line ?? '?'}. Read the code. Default to real=false if uncertain.`,
-      { label: `verify:${d.key}`, phase: 'Verify', model: 'sonnet', effort: 'high', schema: VERDICT_SCHEMA },
+      { label: `verify:${d.key}`, phase: 'Verify', model: 'sonnet', effort: 'medium', schema: VERDICT_SCHEMA },
     ).then((v) => ({ ...f, dimension: d.key, verified: !!(v && v.real) })),
   )),
 )

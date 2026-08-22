@@ -78,11 +78,11 @@ Otherwise it drives to `done`. Do not insert routine human checkpoints.
 
 | Stage | Model | Effort |
 |---|---|---|
-| Implementation | Sonnet | high |
-| Spec review | Sonnet | high |
-| Quality review | Sonnet (Fable on the final batch — its cumulative diff review is the whole-run safety net) | high |
-| Fix (staged) | Sonnet → Fable | high |
-| Post-fix re-check (scoped to the findings) | Sonnet | high |
+| Implementation | Sonnet | medium |
+| Spec review | Sonnet | medium |
+| Quality review | Sonnet (Fable on the final batch — its cumulative diff review is the whole-run safety net) | medium (Fable: high) |
+| Fix (staged) | Sonnet → Fable | medium → high |
+| Post-fix re-check (scoped to the findings) | Sonnet | medium |
 | Final verification (full suite + lint, once per run) | Sonnet | low |
 
 Planning (kit:brainstorming, kit:writing-plans) runs in the main session — run those in a Fable high session. The workflow pins the above regardless of session model. Reviews are deliberately Sonnet-first: transcript analysis showed 69% of review gates return zero actionable findings, so Fable is reserved for the one review whose diff covers the entire run.
