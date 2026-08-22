@@ -40,7 +40,7 @@ Model by story `complexity` (from `story show --json`; absent = routine):
 | complexity | planner model | effort |
 |---|---|---|
 | routine | sonnet | high |
-| hard | opus | xhigh |
+| hard | fable | high |
 | frontier | fable | xhigh |
 
 `frontier` is your human partner's explicit opt-in to Fable, made at board-approval time — never self-assign it.

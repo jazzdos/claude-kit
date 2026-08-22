@@ -40,7 +40,7 @@ When you want an independent review of a diff:
    - It fans out one reviewer per dimension, verifies each finding, and returns `{ diffRef, findings }` — delivered inside the Workflow completion envelope, so read them from `.result.findings` on the first extraction (the top level is harness metadata: `summary`, `logs`, `agentCount`, token counts — there is no top-level `findings`).
 4. **Act on the consolidated findings** (below).
 
-The default dimensions are correctness, quality, tests, security, and architecture; override `reviewDims` to focus or extend the review. Quality, security, and architecture run on Opus (xhigh); correctness and tests on Sonnet (high).
+The default dimensions are correctness, quality, tests, security, and architecture; override `reviewDims` to focus or extend the review. Quality, security, and architecture run on Fable (high); correctness and tests on Sonnet (high).
 
 ## Acting on Findings
 

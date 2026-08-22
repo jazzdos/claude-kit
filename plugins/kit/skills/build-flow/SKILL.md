@@ -68,7 +68,7 @@ Markdown stays the human format — you parse it into structure at runtime.
 ## Autonomous Until Blocked
 
 The workflow runs batches back-to-back without pausing. It returns `blocked` ONLY when:
-- the review fix-loop can't converge after `maxFixRounds` (staged Sonnet→Opus fixing),
+- the review fix-loop can't converge after `maxFixRounds` (staged Sonnet→Fable fixing),
 - the final full-suite verification still fails after its bounded fix rounds, or
 - an agent set `needsHumanInput` — task ambiguous/underspecified, contradicts the codebase, an unplanned decision, or a destructive/irreversible action.
 
@@ -80,12 +80,12 @@ Otherwise it drives to `done`. Do not insert routine human checkpoints.
 |---|---|---|
 | Implementation | Sonnet | high |
 | Spec review | Sonnet | high |
-| Quality review | Sonnet (Opus on the final batch — its cumulative diff review is the whole-run safety net) | high (xhigh on final) |
-| Fix (staged) | Sonnet → Opus | high |
+| Quality review | Sonnet (Fable on the final batch — its cumulative diff review is the whole-run safety net) | high |
+| Fix (staged) | Sonnet → Fable | high |
 | Post-fix re-check (scoped to the findings) | Sonnet | high |
 | Final verification (full suite + lint, once per run) | Sonnet | low |
 
-Planning (kit:brainstorming, kit:writing-plans) runs in the main session — run those in an Opus max/xhigh session. The workflow pins the above regardless of session model. Reviews are deliberately Sonnet-first: transcript analysis showed 69% of review gates return zero actionable findings, so Opus is reserved for the one review whose diff covers the entire run.
+Planning (kit:brainstorming, kit:writing-plans) runs in the main session — run those in a Fable high session. The workflow pins the above regardless of session model. Reviews are deliberately Sonnet-first: transcript analysis showed 69% of review gates return zero actionable findings, so Fable is reserved for the one review whose diff covers the entire run.
 
 ## Interruptibility
 

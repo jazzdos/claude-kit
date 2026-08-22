@@ -19,7 +19,7 @@ const DIMS = args.reviewDims ?? [
   { key: 'quality', focus: 'separation of concerns, DRY, naming, error handling, maintainability', model: 'sonnet', effort: 'high' },
   { key: 'tests', focus: 'tests verify real behavior (not mocks), edge cases covered, all passing', model: 'sonnet', effort: 'high' },
   { key: 'security', focus: 'injection, auth, secrets, unsafe operations', model: 'sonnet', effort: 'high' },
-  { key: 'architecture', focus: 'plan/design alignment, module boundaries, sound abstractions, scalability', model: 'opus', effort: 'xhigh' },
+  { key: 'architecture', focus: 'plan/design alignment, module boundaries, sound abstractions, scalability', model: 'fable', effort: 'high' },
 ]
 
 const FINDINGS_SCHEMA = {

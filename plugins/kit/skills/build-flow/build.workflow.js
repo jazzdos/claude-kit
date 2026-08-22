@@ -259,7 +259,7 @@ for (let b = startBatch; b < batches.length; b++) {
     // `git diff main` covers the whole run, so this is the run-level safety net.
     () => agent(qualityPrompt(batch), {
       label: `quality:b${b + 1}`, phase: 'Review',
-      model: finalBatch ? 'opus' : 'sonnet', effort: finalBatch ? 'xhigh' : 'high', schema: REVIEW_SCHEMA,
+      model: finalBatch ? 'fable' : 'sonnet', effort: 'high', schema: REVIEW_SCHEMA,
     }),
   ])
   let findings = [...(spec?.findings ?? []), ...(quality?.findings ?? [])]
@@ -270,7 +270,7 @@ for (let b = startBatch; b < batches.length; b++) {
       return { status: 'blocked', blockedAtBatch: b, reason: `Review unresolved after ${MAX_FIX_ROUNDS} fix round(s)`, findings, ledger, results }
     }
     phase('Fix')
-    const fixModel = round < MAX_FIX_ROUNDS - 1 ? 'sonnet' : 'opus' // staged escalation
+    const fixModel = round < MAX_FIX_ROUNDS - 1 ? 'sonnet' : 'fable' // staged escalation
     log(`Batch ${b + 1} fix round ${round + 1} (${fixModel}): ${findings.length} finding(s)`)
     const fix = await agent(fixPrompt(batch, findings), { label: `fix:b${b + 1}:r${round + 1}`, phase: 'Fix', model: fixModel, effort: 'high', schema: IMPL_SCHEMA })
     if (fix && fix.needsHumanInput) {
@@ -297,7 +297,7 @@ for (let v = 0; ; v++) {
     return { status: 'blocked', blockedAtBatch: batches.length - 1, reason: `Final verification still failing after ${v} fix round(s): ${verification.summary}`, findings: verification.failures, ledger, results }
   }
   log(`Final verification failed (${verification.failures?.length ?? 0} failure(s)) — fix round ${v + 1}`)
-  const fix = await agent(verifyFixPrompt(verification), { label: `verify-fix:r${v + 1}`, phase: 'Verify', model: v === 0 ? 'sonnet' : 'opus', effort: 'high', schema: IMPL_SCHEMA })
+  const fix = await agent(verifyFixPrompt(verification), { label: `verify-fix:r${v + 1}`, phase: 'Verify', model: v === 0 ? 'sonnet' : 'fable', effort: 'high', schema: IMPL_SCHEMA })
   if (fix && fix.needsHumanInput) {
     return { status: 'blocked', blockedAtBatch: batches.length - 1, reason: fix.needsHumanInput.reason, findings: verification.failures, ledger, results }
   }

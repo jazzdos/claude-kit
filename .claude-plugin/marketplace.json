@@ -1,8 +1,8 @@
 {
-  "name": "shousper-kit",
-  "description": "Personal Claude Code toolkit",
+  "name": "jazzdos-kit",
+  "description": "Personal Claude Code toolkit (jazzdos fork of shousper/claude-kit: opus/xhigh stages run on fable/high)",
   "owner": {
-    "name": "shousper"
+    "name": "jazzdos"
   },
   "plugins": [
     {
