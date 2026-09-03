@@ -206,7 +206,7 @@ describe("build-flow runner execution flow", () => {
     expect(r.findings?.length).toBeGreaterThan(0);
   });
 
-  it("escalates the fix model from sonnet to fable on the final round", async () => {
+  it("escalates the fix agent from sonnet/medium to fable/high on the final round", async () => {
     const dirty = { approved: false, findings: [{ severity: "critical", issue: "x" }] };
     const r = await runFlow(
       { batches: [[task("a")]], maxFixRounds: 2 },
@@ -217,8 +217,9 @@ describe("build-flow runner execution flow", () => {
         : clean,
     );
 
-    const fixModels = r.calls.filter((c) => c.role === "fix").map((c) => c.opts?.model);
-    expect(fixModels).toEqual(["sonnet", "fable"]);
+    const fixes = r.calls.filter((c) => c.role === "fix");
+    expect(fixes.map((c) => c.opts?.model)).toEqual(["sonnet", "fable"]);
+    expect(fixes.map((c) => c.opts?.effort)).toEqual(["medium", "high"]);
   });
 
   it("escalates the quality review to fable only on the final batch", async () => {
@@ -226,8 +227,10 @@ describe("build-flow runner execution flow", () => {
 
     expect(r.status).toBe("done");
     const quality = r.calls.filter((c) => c.role === "quality");
+    // Sonnet-first at medium; the final batch escalates to Fable at high because its
+    // `git diff main` review covers the whole run (see build.workflow.js ~L258).
     expect(quality.map((c) => c.opts?.model)).toEqual(["sonnet", "fable"]);
-    expect(quality.map((c) => c.opts?.effort)).toEqual(["high", "high"]);
+    expect(quality.map((c) => c.opts?.effort)).toEqual(["medium", "high"]);
   });
 
   it("runs the final verification once and dispatches a verify-fix on failure", async () => {
@@ -243,6 +246,20 @@ describe("build-flow runner execution flow", () => {
     expect(r.calls.filter((c) => c.role === "verify")).toHaveLength(2);
     expect(r.calls.filter((c) => c.role === "verify-fix")).toHaveLength(1);
     expect((r as Run & { verification?: { passed: boolean } }).verification?.passed).toBe(true);
+  });
+
+  it("escalates verify-fix from sonnet/medium to fable/high on the second round", async () => {
+    const failing = { passed: false, summary: "1 test failing", failures: [{ check: "t1", detail: "x != y" }] };
+    const r = await runFlow({ batches: [[task("a")]] }, (role, { occurrence }) => {
+      if (role === "verify") return occurrence < 2 ? failing : verified;
+      return allClean(role, { prompt: "", occurrence, calls: [] });
+    });
+
+    expect(r.status).toBe("done");
+    expect(r.calls.filter((c) => c.role === "verify")).toHaveLength(3);
+    const fixes = r.calls.filter((c) => c.role === "verify-fix");
+    expect(fixes.map((c) => c.opts?.model)).toEqual(["sonnet", "fable"]);
+    expect(fixes.map((c) => c.opts?.effort)).toEqual(["medium", "high"]);
   });
 
   it("stamps every agent prompt with the worktree header when args.worktree is set", async () => {
