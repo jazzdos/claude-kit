@@ -52,6 +52,12 @@ See README.md (upstream text) and shared/stories/README.md.
   `plugins/<name>/.claude-plugin/plugin.json` and that plugin's entry in
   `.claude-plugin/marketplace.json` together (checked by the static
   suite). Tag `<plugin>--vX.Y.Z` on main after merging.
+- `plugins/stories-claude/.claude-plugin/plugin.json` declares no
+  `dependencies`. With one, `claude plugin update kit` resolves kit
+  through a git-subdir checkout of `plugins/kit-claude` alone at the
+  highest `kit--vX.Y.Z` tag, where the symlinks into `shared/` dangle and
+  are dropped, leaving a kit with no skills. Guarded by
+  `tests/static/fork-pins.test.ts`; see `docs/decisions/`.
 - Install `kit@jazzdos-kit` and `stories@jazzdos-kit` from this
   marketplace only, never from `shousper-kit`. The README Install block
   is upstream text that still names shousper.
