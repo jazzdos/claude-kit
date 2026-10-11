@@ -128,3 +128,12 @@ validate` exit 0 for the marketplace and the three Claude plugins. Still
 pending Jarrod's ask: push main and the tag, then steps 2 and 3 above.
 Worktree `.worktrees/drop-stories-kit-dependency` is still present; use
 kit:worktree-cleanup when ready.
+
+Rolled out 2026-10-11: main and `stories--v0.6.1` pushed; on lux
+`claude plugin marketplace update jazzdos-kit`, then stories 0.6.0 to
+0.6.1 and kit 1.6.0-d163944273cc to 1.6.0, both copied from the
+marketplace clone (debug logs show no git-subdir source and no
+broken-symlink skips). `kit/1.6.0` has 17 SKILL.md, no symlinks, and is
+byte-identical to the marketplace source and to the hand repair;
+session-start.sh exits 0. The hand-repaired dir is marked orphaned and
+left for Claude Code to clean. Restart required to apply.
