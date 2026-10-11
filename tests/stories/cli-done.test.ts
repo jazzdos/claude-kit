@@ -2,7 +2,9 @@ import { describe, expect, test } from "bun:test";
 import { existsSync, mkdirSync, readdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { spawnSync } from "node:child_process";
-import { loadStories } from "../../plugins/stories/lib/board.mjs";
+import { loadStories } from "../../shared/stories/lib/board.mjs";
+import { evidenceRoot } from "../../shared/stories/lib/util.mjs";
+import { mergeCommitMessage, worktreePath } from "../../shared/stories/lib/worktrees.mjs";
 import { makeRepo, runStory, DEFAULT_CONFIG, type Repo } from "./helpers";
 
 const CONFIG = { storiesDir: "stories" };
@@ -13,10 +15,10 @@ const git = (cwd: string, ...args: string[]) => {
 };
 
 async function claimedStory(repo: Repo, extra: string[] = []): Promise<string> {
-  const created = await runStory(repo.root, ["create", "--title", "story under test", ...extra, "--json"]);
+  const created = await runStory(repo.root, ["create", "--title", "story under test", "--description", "d", "--ac", "a", ...extra, "--json"]);
   const { id } = created.json() as { id: string };
   expect((await runStory(repo.root, ["claim", id, "--session", "w1"])).code).toBe(0);
-  const wt = join(repo.root, ".worktrees", id);
+  const wt = worktreePath(repo.root, id);
   writeFileSync(join(wt, "impl.ts"), "code\n");
   git(wt, "add", "impl.ts");
   git(wt, "commit", "-m", "implement");
@@ -34,8 +36,8 @@ describe("story done — self mode", () => {
     expect(s.claim).toBeUndefined();
     expect(s.touches).toEqual(["impl.ts"]); // reconciled from the actual diff, not the declared glob
     expect(existsSync(join(repo.root, "impl.ts"))).toBe(true); // merged
-    expect(existsSync(join(repo.root, ".worktrees", id))).toBe(false);
-    const evidence = readdirSync(join(repo.root, ".claude/story-evidence", id));
+    expect(existsSync(worktreePath(repo.root, id))).toBe(false);
+    const evidence = readdirSync(join(evidenceRoot(repo.root), id));
     expect(evidence.some((f) => f.endsWith(".json"))).toBe(true);
     await repo.cleanup();
   });
@@ -43,7 +45,7 @@ describe("story done — self mode", () => {
   test("done run from INSIDE the worktree survives the teardown invalidating cwd", async () => {
     const repo = await makeRepo();
     const id = await claimedStory(repo);
-    const wt = join(repo.root, ".worktrees", id);
+    const wt = worktreePath(repo.root, id);
     // integrateSelf tears the worktree down BEFORE the final status write; the
     // command was started from inside it, so every post-teardown step must be
     // independent of cwd or the story strands in-progress after a real merge.
@@ -61,7 +63,7 @@ describe("story done — self mode", () => {
     const repo = await makeRepo();
     const id = await claimedStory(repo);
     // Pre-existing pile-up: an unrelated board write nobody ever committed.
-    const pending = await runStory(repo.root, ["create", "--title", "unrelated pending story", "--json"]);
+    const pending = await runStory(repo.root, ["create", "--title", "unrelated pending story", "--description", "d", "--ac", "a", "--json"]);
     expect(pending.code).toBe(0);
     expect((await runStory(repo.root, ["done", id, "--allow-unplanned"])).code).toBe(0);
     expect(git(repo.root, "status", "--porcelain", "--", "stories").trim()).toBe("");
@@ -93,7 +95,7 @@ describe("story done — self mode", () => {
     expect(JSON.parse(blocked.stderr).error).toContain(`story record ${id} --gate visual`);
     expect((await runStory(repo.root, ["record", id, "--gate", "visual", "--verdict", "pass", "--evidence", "shot.png"])).code).toBe(0);
     expect((await runStory(repo.root, ["done", id, "--allow-unplanned"])).code).toBe(0);
-    const dir = join(repo.root, ".claude/story-evidence", id);
+    const dir = join(evidenceRoot(repo.root), id);
     const evidenceFile = readdirSync(dir).filter((f) => !f.startsWith("verdict-")).sort().at(-1)!;
     const payload = JSON.parse(await Bun.file(join(dir, evidenceFile)).text());
     expect(payload.gates).toEqual(
@@ -118,20 +120,52 @@ describe("story done — self mode", () => {
     const s = loadStories(repo.root, CONFIG).find((x) => x.id === id)!;
     expect(s.status).toBe("in-progress");
     expect(s.body).toMatch(/## Implementation Notes[\s\S]*integration conflict/);
-    expect(existsSync(join(repo.root, ".worktrees", id))).toBe(true);
+    expect(existsSync(worktreePath(repo.root, id))).toBe(true);
     expect(git(repo.root, "status", "--porcelain").includes("UU")).toBe(false); // no half-merge left behind
     await repo.cleanup();
   });
 
   test("done requires in-progress", async () => {
     const repo = await makeRepo();
-    const created = await runStory(repo.root, ["create", "--title", "x", "--json"]);
+    const created = await runStory(repo.root, ["create", "--title", "x", "--description", "d", "--ac", "a", "--json"]);
     const { id } = created.json() as { id: string };
     const r = await runStory(repo.root, ["done", id]);
     expect(r.code).toBe(1);
     expect(JSON.parse(r.stderr).error).toMatch(/expected in-progress/);
     await repo.cleanup();
   });
+
+  test("story done on an already-done story is a success no-op", async () => {
+    const repo = await makeRepo();
+    const id = await claimedStory(repo);
+    expect((await runStory(repo.root, ["done", id, "--allow-unplanned"])).code).toBe(0);
+    const second = await runStory(repo.root, ["done", id, "--json"]);
+    expect(second.code).toBe(0);
+    expect(second.json()).toMatchObject({ id, status: "done", already: true });
+    await repo.cleanup();
+  });
+
+  test("a matching commit message alone does NOT excuse a real conflict — branch content is verified, not discarded", async () => {
+    const repo = await makeRepo();
+    const id = await claimedStory(repo); // branch has an uncommitted-to-base "implement" commit
+    // A base commit happens to match the merge-message convention (what
+    // isMergedSelf greps for) but carries content that never came from this
+    // branch — e.g. a human's manual, differently-resolved merge. The retry's
+    // `git merge` genuinely conflicts, and the message-grep match must NOT be
+    // trusted to discard the still-present, still-divergent branch.
+    writeFileSync(join(repo.root, "impl.ts"), "already landed differently\n");
+    git(repo.root, "add", "impl.ts");
+    git(repo.root, "commit", "-m", mergeCommitMessage(id, "story under test"));
+
+    const r = await runStory(repo.root, ["done", id, "--json", "--allow-unplanned"]);
+    expect(r.code).toBe(1);
+    expect(JSON.parse(r.stderr).error).toMatch(/conflict/);
+    const s = loadStories(repo.root, CONFIG).find((x) => x.id === id)!;
+    expect(s.status).toBe("in-progress"); // not silently closed
+    expect(existsSync(worktreePath(repo.root, id))).toBe(true); // branch content preserved
+    await repo.cleanup();
+  });
+
 });
 
 describe("story done — local mode", () => {
@@ -144,7 +178,7 @@ describe("story done — local mode", () => {
     expect(s.status).toBe("in-review");
     expect(s.claim).toBeUndefined();
     expect(s.touches).toEqual(["impl.ts"]); // in-review holds exactly the real files
-    expect(existsSync(join(repo.root, ".worktrees", id))).toBe(true);
+    expect(existsSync(worktreePath(repo.root, id))).toBe(true);
     expect(existsSync(join(repo.root, "impl.ts"))).toBe(false); // NOT merged
     await repo.cleanup();
   });
@@ -171,10 +205,10 @@ describe("story done — committed-work guards", () => {
   // worktree, and three stories closed "done" with zero code on main.
   test("refuses done while the worktree has uncommitted changes — nothing is merged or torn down", async () => {
     const repo = await makeRepo();
-    const created = await runStory(repo.root, ["create", "--title", "uncommitted work", "--json"]);
+    const created = await runStory(repo.root, ["create", "--title", "uncommitted work", "--description", "d", "--ac", "a", "--json"]);
     const { id } = created.json() as { id: string };
     expect((await runStory(repo.root, ["claim", id, "--session", "w1"])).code).toBe(0);
-    const wt = join(repo.root, ".worktrees", id);
+    const wt = worktreePath(repo.root, id);
     writeFileSync(join(wt, "impl.ts"), "uncommitted code\n"); // no git add/commit
 
     const r = await runStory(repo.root, ["done", id]);
@@ -190,7 +224,7 @@ describe("story done — committed-work guards", () => {
 
   test("refuses done when the story branch has no commits beyond base, unless --allow-empty", async () => {
     const repo = await makeRepo();
-    const created = await runStory(repo.root, ["create", "--title", "codeless story", "--json"]);
+    const created = await runStory(repo.root, ["create", "--title", "codeless story", "--description", "d", "--ac", "a", "--json"]);
     const { id } = created.json() as { id: string };
     expect((await runStory(repo.root, ["claim", id, "--session", "w1"])).code).toBe(0);
 
@@ -208,10 +242,10 @@ describe("story done — committed-work guards", () => {
 
   test("dirty board files get a restore hint, not a commit instruction", async () => {
     const repo = await makeRepo();
-    const created = await runStory(repo.root, ["create", "--title", "board drift", "--json"]);
+    const created = await runStory(repo.root, ["create", "--title", "board drift", "--description", "d", "--ac", "a", "--json"]);
     const { id } = created.json() as { id: string };
     expect((await runStory(repo.root, ["claim", id, "--session", "w1"])).code).toBe(0);
-    const wt = join(repo.root, ".worktrees", id);
+    const wt = worktreePath(repo.root, id);
     mkdirSync(join(wt, "stories"), { recursive: true });
     writeFileSync(join(wt, "stories", "stray.md"), "board pollution\n");
 

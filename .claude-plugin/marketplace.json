@@ -1,6 +1,6 @@
 {
   "name": "jazzdos-kit",
-  "description": "Personal Claude Code toolkit (jazzdos fork of shousper/claude-kit: opus/xhigh stages run on fable/high)",
+  "description": "Personal Claude Code toolkit (jazzdos fork of shousper/clanker-kit: opus/xhigh stages run on fable/high, sonnet stages at medium)",
   "owner": {
     "name": "jazzdos"
   },
@@ -8,14 +8,20 @@
     {
       "name": "kit",
       "description": "Skills, hooks, and agents for a review-first development workflow",
-      "version": "1.3.1",
-      "source": "./plugins/kit"
+      "version": "1.6.0",
+      "source": "./plugins/kit-claude"
+    },
+    {
+      "name": "writing",
+      "description": "Developer-documentation writing voice, a documentation-authoring skill, and an advisory Vale lint hook",
+      "version": "0.1.1",
+      "source": "./plugins/writing-claude"
     },
     {
       "name": "stories",
       "description": "Story-based autonomous workflow: markdown story board, typed verification gates, goal loop, parallel same-machine workers",
-      "version": "0.2.0",
-      "source": "./plugins/stories"
+      "version": "0.6.0",
+      "source": "./plugins/stories-claude"
     }
   ]
 }

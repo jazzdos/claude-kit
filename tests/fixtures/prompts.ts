@@ -78,16 +78,16 @@ const prompts: Record<string, SkillPrompts> = {
     ],
   },
 
-  "code-standards": {
+  "writing:writing-docs": {
     activate: [
-      { prompt: "Add proper error handling to the HTTP server in cmd/server/main.go", workspace: "go" },
-      { prompt: "Refactor src/main.rs to use proper error handling instead of unwrap", workspace: "rust" },
-      { prompt: "Convert the inline styles in src/App.tsx to use Tailwind CSS classes", workspace: "tailwind" },
+      { prompt: "Write a README for this package that explains installation and basic usage", workspace: "writing" },
+      { prompt: "Add documentation comments to the exported functions in src/store.ts", workspace: "writing" },
+      { prompt: "Document the release procedure in docs/releasing.md: bump the version, tag, and publish", workspace: "writing" },
     ],
     skip: [
-      { prompt: "What does the Go server in cmd/server/main.go do?", workspace: "go" },
-      "Review the PR for any issues",
-      "Fix the failing test in tests/index.test.ts",
+      { prompt: "Write the commit message for the staged changes", workspace: "writing" },
+      { prompt: "Fix the flaky test in tests/store.test.ts", workspace: "writing" },
+      "Explain what a git worktree is",
     ],
   },
 

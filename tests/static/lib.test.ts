@@ -13,18 +13,8 @@ async function sh(snippet: string, env: Record<string, string> = {}): Promise<{ 
 }
 
 describe("lib.sh", () => {
-  it("scratch key prefers agent_id over session_id", async () => {
-    const r = await sh(`kit_scratch_key '{"agent_id":"A","session_id":"S"}'`);
-    expect(r.out.trim()).toBe("A");
-  });
-
-  it("scratch key falls back to session_id", async () => {
-    const r = await sh(`kit_scratch_key '{"session_id":"S"}'`);
-    expect(r.out.trim()).toBe("S");
-  });
-
-  it("scratch file lives under CLAUDE_CONFIG_DIR/kit/state", async () => {
-    const r = await sh(`kit_scratch_file '{"agent_id":"A"}'`, { CLAUDE_CONFIG_DIR: "/tmp/cfgX" });
+  it("scratch file lives under KIT_STATE_DIR, keyed by KIT_SCRATCH_KEY (no JSON, no CLAUDE_ env)", async () => {
+    const r = await sh("kit_scratch_file", { KIT_STATE_DIR: "/tmp/cfgX/kit/state", KIT_SCRATCH_KEY: "A" });
     expect(r.out.trim()).toBe("/tmp/cfgX/kit/state/touched-A.txt");
   });
 
@@ -40,5 +30,15 @@ describe("lib.sh", () => {
   it("kit_nearest_dir finds the marker up the tree", async () => {
     const r = await sh(`d=$(mktemp -d); mkdir -p "$d/a/b"; : > "$d/a/Cargo.toml"; kit_nearest_dir "$d/a/b" Cargo.toml; rm -rf "$d"`);
     expect(r.out.trim().endsWith("/a")).toBe(true);
+  });
+
+  it("strip_frontmatter drops a leading YAML block and leaves the rest untouched", async () => {
+    const r = await sh(`f=$(mktemp); printf -- '---\\nname: x\\ndescription: y\\n---\\n\\nbody line\\n' > "$f"; strip_frontmatter "$f"; rm -f "$f"`);
+    expect(r.out).toBe("\nbody line\n");
+  });
+
+  it("strip_frontmatter is a no-op when the file has no frontmatter", async () => {
+    const r = await sh(`f=$(mktemp); printf 'plain body\\n' > "$f"; strip_frontmatter "$f"; rm -f "$f"`);
+    expect(r.out).toBe("plain body\n");
   });
 });

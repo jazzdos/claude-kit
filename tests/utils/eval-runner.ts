@@ -1,6 +1,4 @@
-import { KIT_ROOT, STORIES_ROOT } from "./paths";
-
-const CLAUDE_BIN = process.env.CLAUDE_BIN || Bun.which("claude") || "claude";
+import type { Harness, NormalizedEvent, RunOptions } from "./harness/types";
 
 /** Mirrors the timeout(1) convention: exit code 124 means the process was killed due to timeout. */
 const TIMEOUT_EXIT_CODE = 124;
@@ -9,53 +7,31 @@ export interface EvalResult {
   exitCode: number;
   stdout: string;
   stderr: string;
+  events: NormalizedEvent[];
 }
 
-export interface EvalOptions {
-  timeout?: number;
-  /** One or more plugin dirs, each emitted as a repeated --plugin-dir flag. Pass `false` to skip --plugin-dir entirely. Defaults to both bundled plugins. */
-  pluginDir?: string | string[] | false;
-  outputFormat?: string;
-  /** Model to use. Defaults to "sonnet" to keep eval costs low. */
-  model?: string;
-  maxTurns?: number;
-  cwd?: string;
-  env?: Record<string, string>;
-  resume?: string;
-  forkSession?: boolean;
-  noSessionPersistence?: boolean;
-  /** Appends --dangerously-skip-permissions. Eval-only; isolated temp workspaces are the sole sanctioned context. */
-  dangerouslySkipPermissions?: boolean;
+export type EvalOptions = RunOptions;
+
+/** Builds the full argv (binary + flags) for a harness run via its own adapter. */
+export function buildCommand(harness: Harness, prompt: string, options: EvalOptions): string[] {
+  return [harness.bin, ...harness.buildArgs(prompt, options)];
 }
 
 export async function runEval(
+  harness: Harness,
   prompt: string,
   options: EvalOptions = {},
 ): Promise<EvalResult> {
-  const {
-    timeout = 30_000,
-    pluginDir = [KIT_ROOT, STORIES_ROOT],
-    outputFormat = "stream-json",
-    model = "sonnet",
-    maxTurns,
-    cwd,
-    env,
-    resume,
-    forkSession,
-    noSessionPersistence,
-    dangerouslySkipPermissions,
-  } = options;
+  const { cwd, env } = options;
+  // Scale the kill deadline per harness: a single wall-clock budget either kills the
+  // slower harness mid-run (exit 124 misread as a failed assertion) or wastes the
+  // faster one's budget.
+  const timeout = (options.timeout ?? 30_000) * harness.timeoutScale;
 
-  const args = [CLAUDE_BIN, "-p", "--verbose", "--output-format", outputFormat, "--model", model];
-  for (const dir of pluginDir === false ? [] : [pluginDir].flat()) args.push("--plugin-dir", dir);
-  if (maxTurns !== undefined) args.push("--max-turns", String(maxTurns));
-  if (resume) args.push("--resume", resume);
-  if (forkSession) args.push("--fork-session");
-  if (noSessionPersistence) args.push("--no-session-persistence");
-  if (dangerouslySkipPermissions) args.push("--dangerously-skip-permissions");
+  const [bin, ...args] = buildCommand(harness, prompt, options);
 
   const spawnOptions: Parameters<typeof Bun.spawn>[1] = {
-    stdin: new TextEncoder().encode(prompt),
+    stdin: "ignore",
     stdout: "pipe",
     stderr: "pipe",
   };
@@ -63,14 +39,22 @@ export async function runEval(
   if (cwd) spawnOptions.cwd = cwd;
   if (env) spawnOptions.env = env;
 
-  const proc = Bun.spawn(args, spawnOptions);
+  // New process group so timeout/exit can reap descendants (e.g. `yes` Claude
+  // leaves behind when the leader is killed). Killing -$pid of bun's own group
+  // would take down the test runner; only do it because we setpgrp first.
+  const python = Bun.which("python3") ?? "/usr/bin/python3";
+  const proc = Bun.spawn(
+    [python, "-c", "import os, sys; os.setpgrp(); os.execvp(sys.argv[1], sys.argv[1:])", bin, ...args],
+    spawnOptions,
+  );
+  const pgid = proc.pid;
 
   let timedOut = false;
   let sigkillTimer: ReturnType<typeof setTimeout> | undefined;
   const timer = setTimeout(() => {
     timedOut = true;
-    proc.kill();
-    sigkillTimer = setTimeout(() => proc.kill("SIGKILL"), 5_000);
+    reapProcessGroup(pgid, "SIGTERM");
+    sigkillTimer = setTimeout(() => reapProcessGroup(pgid, "SIGKILL"), 5_000);
   }, timeout);
 
   try {
@@ -92,9 +76,19 @@ export async function runEval(
       exitCode: timedOut ? TIMEOUT_EXIT_CODE : exitCode,
       stdout,
       stderr: timedOut ? stderr + "\n[eval-runner] process killed after timeout" : stderr,
+      events: harness.parse(stdout),
     };
   } finally {
     clearTimeout(timer);
-    if (sigkillTimer) clearTimeout(sigkillTimer);
+    clearTimeout(sigkillTimer);
+    reapProcessGroup(pgid, "SIGKILL");
+  }
+}
+
+function reapProcessGroup(pgid: number, signal: "SIGTERM" | "SIGKILL"): void {
+  try {
+    process.kill(-pgid, signal);
+  } catch {
+    // ESRCH: group already gone.
   }
 }

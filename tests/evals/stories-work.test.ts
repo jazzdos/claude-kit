@@ -4,6 +4,8 @@ import { join } from "path";
 import { runEval } from "../utils/eval-runner";
 import { createWorkspace } from "../utils/workspace-manager";
 import { parseStreamJson } from "../utils/workflow-invocation";
+import { claude } from "../utils/harness";
+import { STORIES_CLAUDE_ROOT } from "../utils/paths";
 
 // End-to-end stories loop: given the marker config and a seeded board (fixture
 // workspace-stories, gates = `true`), does a live agent drive the story CLI —
@@ -22,14 +24,14 @@ const SKIP_CLEANUP = process.env.SKIP_CLEANUP === "1";
 const RUN_EVALS = process.env.RUN_EVALS === "1";
 
 const PROMPT =
-  "This project uses the stories workflow (see .claude/story-workflow.json). Complete all " +
+  "This project uses the stories workflow (see .agents/shousper-stories/config.json). Complete all " +
   "stories on the board. Use the story CLI for every board mutation — claim each ready story, " +
   "implement its acceptance criteria, and close it with `story done`. Do NOT launch background " +
   "workflows and do NOT edit files under stories/ directly; implement the work yourself in " +
   "this session.";
 
 // Any invocation of the story CLI, whether bare (`story claim …`) or via a
-// resolved path (`…/plugins/stories/bin/story claim …`).
+// resolved path (`…/plugins/stories-claude/bin/story claim …`).
 const STORY_CLI_RE =
   /(^|[/\s])story\s+(init|create|ready|claim|show|list|board|update|note|park|record|done|doctor|archive|loop)\b/;
 
@@ -68,12 +70,13 @@ describe.skipIf(!RUN_EVALS)("stories:work live loop", () => {
         Array.from({ length: TRIALS }, async () => {
           const ws = await createWorkspace({ workspace: "stories" });
           try {
-            const result = await runEval(PROMPT, {
+            const result = await runEval(claude, PROMPT, {
               timeout: PER_TRIAL_TIMEOUT,
               maxTurns: MAX_TURNS,
               cwd: ws.cwd,
               env: ws.env,
-              noSessionPersistence: true,
+              pluginDirs: [claude.pluginRoot, STORIES_CLAUDE_ROOT],
+              ephemeral: true,
               dangerouslySkipPermissions: true,
             });
             const cliCalls = storyCliCalls(result.stdout);

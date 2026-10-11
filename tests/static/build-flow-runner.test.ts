@@ -1,7 +1,7 @@
 import { describe, it, expect } from "bun:test";
 import { readFileSync } from "fs";
 import { resolve } from "path";
-import { SKILLS_DIR } from "../utils/paths";
+import { KIT_CLAUDE_ROOT } from "../utils/paths";
 
 // The bundled runner is authored against the Workflow runtime, which injects globals
 // (args, agent, parallel, phase, log), supports top-level await, and allows a top-level
@@ -11,7 +11,7 @@ import { SKILLS_DIR } from "../utils/paths";
 // passed as a JSON string -> zero batches -> a silent `done` that looked like success.
 
 const SRC = readFileSync(
-  resolve(SKILLS_DIR, "build-flow", "build.workflow.js"),
+  resolve(KIT_CLAUDE_ROOT, "skills", "build-flow", "build.workflow.js"),
   "utf-8",
 ).replace("export const meta", "const meta"); // `export` is illegal inside a Function body
 
@@ -222,15 +222,43 @@ describe("build-flow runner execution flow", () => {
     expect(fixes.map((c) => c.opts?.effort)).toEqual(["medium", "high"]);
   });
 
-  it("escalates the quality review to fable only on the final batch", async () => {
+  it("escalates the quality review to fable/high only on the final batch", async () => {
     const r = await runFlow({ batches: [[task("a")], [task("b")]] }, allClean);
 
     expect(r.status).toBe("done");
     const quality = r.calls.filter((c) => c.role === "quality");
-    // Sonnet-first at medium; the final batch escalates to Fable at high because its
-    // `git diff main` review covers the whole run (see build.workflow.js ~L258).
     expect(quality.map((c) => c.opts?.model)).toEqual(["sonnet", "fable"]);
     expect(quality.map((c) => c.opts?.effort)).toEqual(["medium", "high"]);
+  });
+
+  it("runs implementation, spec review and re-check on sonnet at medium", async () => {
+    const dirty = { approved: false, findings: [{ severity: "important", issue: "y" }] };
+    const r = await runFlow({ batches: [[task("a")]] }, (role, ctx) =>
+      role === "spec" && ctx.occurrence === 0 ? dirty : allClean(role, ctx),
+    );
+
+    expect(r.status).toBe("done");
+    for (const role of ["impl", "spec", "recheck"] as Role[]) {
+      const calls = r.calls.filter((c) => c.role === role);
+      expect(calls.length).toBeGreaterThan(0);
+      expect(calls.map((c) => c.opts?.model)).toEqual(calls.map(() => "sonnet"));
+      expect(calls.map((c) => c.opts?.effort)).toEqual(calls.map(() => "medium"));
+    }
+  });
+
+  it("escalates verify-fix from sonnet/medium to fable/high on the second round", async () => {
+    const failing = { passed: false, summary: "1 test failing", failures: [{ check: "t1", detail: "x != y" }] };
+    const r = await runFlow({ batches: [[task("a")]] }, (role, ctx) =>
+      role === "verify" ? (ctx.occurrence < 2 ? failing : verified) : allClean(role, ctx),
+    );
+
+    expect(r.status).toBe("done");
+    expect(r.calls.filter((c) => c.role === "verify")).toHaveLength(3);
+    const verifier = r.calls.filter((c) => c.role === "verify");
+    expect(verifier.map((c) => c.opts?.effort)).toEqual(["low", "low", "low"]);
+    const fixes = r.calls.filter((c) => c.role === "verify-fix");
+    expect(fixes.map((c) => c.opts?.model)).toEqual(["sonnet", "fable"]);
+    expect(fixes.map((c) => c.opts?.effort)).toEqual(["medium", "high"]);
   });
 
   it("runs the final verification once and dispatches a verify-fix on failure", async () => {
@@ -246,20 +274,6 @@ describe("build-flow runner execution flow", () => {
     expect(r.calls.filter((c) => c.role === "verify")).toHaveLength(2);
     expect(r.calls.filter((c) => c.role === "verify-fix")).toHaveLength(1);
     expect((r as Run & { verification?: { passed: boolean } }).verification?.passed).toBe(true);
-  });
-
-  it("escalates verify-fix from sonnet/medium to fable/high on the second round", async () => {
-    const failing = { passed: false, summary: "1 test failing", failures: [{ check: "t1", detail: "x != y" }] };
-    const r = await runFlow({ batches: [[task("a")]] }, (role, { occurrence }) => {
-      if (role === "verify") return occurrence < 2 ? failing : verified;
-      return allClean(role, { prompt: "", occurrence, calls: [] });
-    });
-
-    expect(r.status).toBe("done");
-    expect(r.calls.filter((c) => c.role === "verify")).toHaveLength(3);
-    const fixes = r.calls.filter((c) => c.role === "verify-fix");
-    expect(fixes.map((c) => c.opts?.model)).toEqual(["sonnet", "fable"]);
-    expect(fixes.map((c) => c.opts?.effort)).toEqual(["medium", "high"]);
   });
 
   it("stamps every agent prompt with the worktree header when args.worktree is set", async () => {
@@ -317,5 +331,57 @@ describe("build-flow runner execution flow", () => {
     expect(r.status).toBe("blocked");
     expect(r.blockedAtBatch).toBe(0);
     expect(r.reason).toMatch(/array/i);
+  });
+});
+
+// The Workflow runtime resolves agent() to null when the agent was stopped in /workflows or
+// hit an unrecoverable API error. Every stage must turn that into `blocked` naming the agent;
+// reading null as "no findings" / "no failures" is the silent fake-done this file exists to
+// prevent. One row per distinct call site (sequential impl, the parallel review pair, both
+// fix-loop stages, both verify-loop stages).
+describe("build-flow runner: a null agent() result blocks instead of passing", () => {
+  const dirty = { approved: false, findings: [{ severity: "critical", issue: "x" }] };
+  const failing = { passed: false, summary: "1 failing", failures: [{ check: "t1", detail: "x != y" }] };
+  // Drive every stage: spec dirty -> fix -> recheck clean; verify fails once -> verify-fix -> verify ok.
+  const full: Respond = (role, ctx) =>
+    role === "spec" ? dirty
+    : role === "verify" ? (ctx.occurrence === 0 ? failing : verified)
+    : allClean(role, ctx);
+
+  it.each([
+    ["impl", "impl:b"],
+    ["quality", "quality:b1"],
+    ["fix", "fix:b1:r1"],
+    ["recheck", "recheck:b1:r1"],
+    ["verify", "verify:r1"],
+    ["verify-fix", "verify-fix:r1"],
+  ] as Array<[Role, string]>)("%s returning null blocks naming %s", async (nullRole, label) => {
+    const r = await runFlow({ batches: [[task("a"), task("b")]] }, (role, ctx) => {
+      if (role !== nullRole) return full(role, ctx);
+      // For impl, only the SECOND task dies, proving the first task's result is kept.
+      return nullRole === "impl" && !ctx.prompt.includes("TASKMARK:b") ? impl : null;
+    });
+
+    expect(r.status).toBe("blocked");
+    expect(r.blockedAtBatch).toBe(0);
+    expect(r.reason).toContain(label);
+    expect(r.reason).toMatch(/did not complete/i);
+    expect(r.ledger).toBeDefined();
+  });
+
+  it("keeps the finished task's result and spawns no reviewer when an implementer dies", async () => {
+    const r = await runFlow({ batches: [[task("a"), task("b")]] }, (role, ctx) =>
+      role === "impl" ? (ctx.prompt.includes("TASKMARK:b") ? null : impl) : allClean(role, ctx),
+    );
+    expect(r.status).toBe("blocked");
+    expect(r.results).toHaveLength(1);
+    expect(r.calls.map((c) => c.role)).toEqual(["impl", "impl"]);
+  });
+
+  it("never reports done when the verifier dies, even with every batch clean", async () => {
+    const r = await runFlow({ batches: [[task("a")]] }, (role, ctx) => (role === "verify" ? null : allClean(role, ctx)));
+    expect(r.status).toBe("blocked");
+    expect((r as Run & { verification?: unknown }).verification).toBeUndefined();
+    expect(r.ledger?.decisions.some((d) => /verifier returned no result/i.test(d))).toBe(false);
   });
 });

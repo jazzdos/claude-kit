@@ -1,9 +1,11 @@
-# claude-kit
+# clanker-kit
 
-A Claude Code plugin marketplace hosting two plugins:
+A plugin marketplace for Claude Code and OMP hosting four plugins:
 
-- **`kit`** (`plugins/kit/`) — a complete development workflow, from brainstorming ideas through design, implementation, code review, and branch completion.
-- **`stories`** (`plugins/stories/`) — a story-based autonomous workflow built on kit: a repo-native markdown story board with typed verification gates and a goal loop that works the board until it is drained. See [plugins/stories/README.md](plugins/stories/README.md).
+- **`kit`** (`plugins/kit-claude/`, `plugins/kit-omp/`) — a complete development workflow, from brainstorming ideas through design, implementation, code review, and branch completion.
+- **`stories`** (`plugins/stories-claude/`, `plugins/stories-omp/`) — a story-based autonomous workflow built on kit: a repo-native markdown story board with typed verification gates and a goal loop that works the board until it is drained. Each plugin's README covers its harness; the shared guide is [shared/stories/README.md](shared/stories/README.md).
+- **`writing`** (`plugins/writing-claude/`, `plugins/writing-omp/`) — an opt-in developer-documentation writing voice for every reply and file, a documentation-authoring skill, and an advisory Vale lint hook. Independent of kit.
+- **`reports`** (`plugins/reports-omp/`, OMP only) — slash commands that report on your local omp history: token spend, skill usage, and words read and written. Independent of kit; see [its README](plugins/reports-omp/README.md).
 
 The remainder of this README documents `kit`.
 
@@ -13,13 +15,16 @@ The remainder of this README documents `kit`.
 
 ```bash
 # Add the marketplace
-/plugin marketplace add shousper/claude-kit
+/plugin marketplace add shousper/clanker-kit
 
 # Install the core workflow plugin
 /plugin install kit@shousper-kit
 
 # Optional: story-based autonomous workflow (requires kit)
 /plugin install stories@shousper-kit
+
+# Optional: writing voice, documentation skill, and Vale lint (independent of kit)
+/plugin install writing@shousper-kit
 ```
 
 ## Recommended Plugins
@@ -50,7 +55,7 @@ brainstorming → writing-plans → build-flow → finish-branch
 
 Each stage flows into the next automatically. You can enter at any point if you already have what the earlier stages produce.
 
-## Skills (18)
+## Skills (17)
 
 ### Core Workflow
 
@@ -68,6 +73,7 @@ Each stage flows into the next automatically. You can enter at any point if you 
 | `tdd` | Test-driven development — write failing test first, implement minimally |
 | `debugging` | Systematic debugging before proposing fixes |
 | `code-review` | Verify implementation meets requirements at review checkpoints |
+| `consult-codex` | Get a second opinion from Codex on a design, diff, or bug |
 | `receiving-review` | Handle code review feedback with technical rigor |
 | `verify` | Run verification before claiming work is complete |
 
@@ -92,10 +98,15 @@ Each stage flows into the next automatically. You can enter at any point if you 
 
 | Event | Hook | Trigger |
 |-------|------|---------|
+| PreToolUse | `standards-check.sh` | Edit/Write/MultiEdit — blocks an agent's first edit in Go, Rust, Python, C++, HCL, or Tailwind CSS until it has read that language's standards file; asks once per language per agent, and allows the edit if the check itself fails |
+| PostToolUse | `standards-seen.sh` | Read — marks a language's standards as loaded when the agent reads its `CLAUDE.md` in full; a ranged read doesn't count |
 | PostToolUse | `record.sh` | Write/Edit — records edited source paths (Go, Rust, JS/TS, HCL/Terraform/OpenTofu) to an agent-scoped scratch; never modifies files |
 | Stop + SubagentStop | `format-on-stop.sh` | End of turn — formats the touched files and runs checks once, surfacing results as a single non-blocking message (advisory, not mid-turn blocking) |
-| SessionStart | `session-start.sh` | Session startup, resume, clear, compact — kit intro and code-standards guidance |
+| SessionStart | `session-start.sh` | Session startup, resume, clear, compact — kit intro |
 | SessionStart | `hcl-detect.sh` | Startup/resume — one-time HCL tool-detection notice and scratch prune |
+| SessionStart | `standards-reset.sh` | Clear/compact — forgets which standards were loaded, because the text has left the context |
+
+On OMP, `plugins/kit-omp/omp/hooks.ts` runs the same checks from the `tool_call`, `tool_result`, and `session_compact` events.
 
 ## Agents
 
@@ -105,12 +116,16 @@ Each stage flows into the next automatically. You can enter at any point if you 
 
 ## Code Standards
 
-Bundled coding standards for automatic reference when working with:
+Kit bundles coding standards for these languages:
 
 - **Go** — formatting, error handling, project structure
 - **Rust** — clippy lints, formatting, idiomatic patterns
-- **Python** — style, type hints, project conventions
-- **Tailwind CSS** — utility classes, component patterns
+- **Python** — type hints, error handling, testing, and uv, ruff and mypy defaults; uses the project's own type checker when it has one
+- **C++** — C++20 baseline, resource and memory safety, concurrency, security; `.h` and CMake files count as C++ only in a repository that holds C++ sources
+- **HCL (Terraform/OpenTofu)** — file layout, naming, variables, outputs, version pinning, tooling
+- **Tailwind CSS** — utility classes, component patterns; applies only in a project with a `tailwind.config.*` file or a `tailwindcss` dependency
+
+A hook enforces them. The first time an agent edits a file in one of these languages, kit blocks the edit and tells the agent to read that language's standards file in full. The agent then retries. Kit asks once per language per agent, and a read with a line range doesn't count. Compaction resets the check, because the standards text leaves the context. Edits made through shell commands, such as `sed -i`, aren't checked.
 
 ## Tools
 
@@ -141,17 +156,19 @@ Resumable — tracks state in `~/.claude-mem/backfill-state.json`. Safe to inter
 
 ## Releases
 
-The two plugins version and release independently. Tags follow the `<plugin>--vX.Y.Z` naming convention on `main` (first tags land when each plugin next releases — e.g. `kit--v1.2.0`, `stories--v0.1.0`):
+The plugins version and release independently. Tags follow the `<plugin>--vX.Y.Z` naming convention on `main`:
 
-- **kit** — version lives in `plugins/kit/.claude-plugin/plugin.json` and the marketplace entry
-- **stories** — version lives in `plugins/stories/.claude-plugin/plugin.json` and the marketplace entry
+- **kit** — `plugins/kit-claude/.claude-plugin/plugin.json` (`kit-claude--vX.Y.Z`) and `plugins/kit-omp/.omp-plugin/plugin.json` (`kit-omp--vX.Y.Z`)
+- **stories** — `plugins/stories-claude/.claude-plugin/plugin.json` (`stories-claude--vX.Y.Z`) and `plugins/stories-omp/.omp-plugin/plugin.json` (`stories-omp--vX.Y.Z`)
+- **writing** — `plugins/writing-claude/.claude-plugin/plugin.json` and `plugins/writing-omp/.omp-plugin/plugin.json`
+- **reports** — `plugins/reports-omp/.omp-plugin/plugin.json` (`reports-omp--vX.Y.Z`)
 
-To release: bump the version in the plugin's `plugin.json` **and** its `.claude-plugin/marketplace.json` entry, merge, then tag the merge commit.
+To release: bump the version in the plugin's manifest **and** its catalogue entry (`.claude-plugin/marketplace.json` for a Claude plugin, `.omp-plugin/marketplace.json` for an OMP plugin), merge, then tag the merge commit.
 
 ## Credits
 
 - [superpowers](https://github.com/obra/superpowers) by Jesse Vincent — kit's skill framework is heavily inspired by superpowers. MIT licensed.
-- [ethpandaops/ai-cookbook](https://github.com/ethpandaops/ai-cookbook) — code standards and hook patterns for Go, Rust, Python, and Tailwind CSS.
+- [ethpandaops/ai-cookbook](https://github.com/ethpandaops/ai-cookbook) — code standards and hook patterns for Go, Rust, and Tailwind CSS.
 
 ## License
 

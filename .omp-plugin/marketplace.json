@@ -1,0 +1,33 @@
+{
+  "name": "shousper-kit",
+  "description": "Personal coding-agent toolkit",
+  "owner": {
+    "name": "shousper"
+  },
+  "plugins": [
+    {
+      "name": "kit",
+      "description": "A review-first development workflow: brainstorming, planning, build, and review skills, plus session hooks and code standards, with a staged build-flow that runs independent spec and quality review gates before every change lands.",
+      "version": "0.6.0",
+      "source": "./plugins/kit-omp"
+    },
+    {
+      "name": "writing",
+      "description": "Developer-documentation writing voice, a documentation-authoring skill, and an advisory Vale lint hook",
+      "version": "0.1.1",
+      "source": "./plugins/writing-omp"
+    },
+    {
+      "name": "stories",
+      "description": "Story-based autonomous workflow: markdown story board, typed verification gates, goal loop, parallel same-machine workers",
+      "version": "0.2.1",
+      "source": "./plugins/stories-omp"
+    },
+    {
+      "name": "reports",
+      "description": "Slash-command reports over your local omp history: token spend, skill usage, and words read and written",
+      "version": "0.1.0",
+      "source": "./plugins/reports-omp"
+    }
+  ]
+}
