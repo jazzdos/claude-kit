@@ -73,3 +73,30 @@ Installed today: kit 1.3.0 and stories 0.2.0 from the cache at
 - `shared/skills/writing-skills/anthropic-best-practices.md` mentions
   Opus three times as third-party reference text; left as upstream wrote
   it.
+
+## Completed 2026-10-11
+
+- Merged to `main` as d163944 (tree identical to the branch), pushed to
+  github.com/jazzdos/claude-kit with tags `kit--v1.6.0` and
+  `stories--v0.6.0`. Post-merge `bun run test`: 1188 pass, 17 skip, 0 fail.
+- Installed plugins on lux updated to kit 1.6.0 and stories 0.6.0 (restart
+  required to apply). The old plugin hook left a stale `story` 0.2.0 on
+  PATH for the rest of that session; the 0.6.0 binary is at
+  `~/.claude/plugins/cache/jazzdos-kit/stories/0.6.0/bin/story`.
+- `story doctor` then `story doctor --fix` run in all nine stories
+  projects. Eight report "board healthy". Standards reports only four
+  detect-only `invalid-id` worktree directories that are not stories
+  (`.DS_Store`, `home-cleanup`, `photo-offload`, `smb-mesh-hardening`);
+  a human decides what to do with those. The migration deletes
+  `.claude/story-workflow.json`, adds `.agents/shousper-stories/`, rewrites
+  the gitignore block and strips state fields such as `status:` from story
+  frontmatter. The duplicated legacy gitignore block in meta and
+  pd-revision was removed by hand.
+- "run kit:code-standards" lines replaced in CLAUDE.md for
+  tec-marker-validation, rl-tba, wa-mine-rehab-monitor and
+  `ZZ. Archive/unda-finance`, and in rl-tba/AGENTS.md. env-health/Bushfire
+  had no such line. `pillars/claude-md.md:96` and
+  `~/.claude/notes/known-fixes.md` updated.
+- All of those out-of-repo changes are left uncommitted in their repos.
+- Worktree `.worktrees/adopt-clanker-kit-upstream` is still present; use
+  kit:worktree-cleanup when ready.
