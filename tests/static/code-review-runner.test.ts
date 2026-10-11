@@ -77,19 +77,28 @@ describe("code-review runner", () => {
     ]);
   });
 
-  it("pins the architecture dimension to opus and the rest to sonnet", async () => {
-    const seen: Record<string, string | undefined> = {};
+  it("pins the architecture dimension to fable/high and the rest to sonnet/medium", async () => {
+    const seen: Record<string, [string | undefined, string | undefined]> = {};
     await runReview({}, (prompt, opts) => {
-      if (isReview(prompt)) seen[opts.label!] = opts.model;
+      if (isReview(prompt)) seen[opts.label!] = [opts.model, opts.effort];
       return isReview(prompt) ? { findings: [] } : { real: true };
     });
     expect(seen).toEqual({
-      "review:correctness": "sonnet",
-      "review:quality": "sonnet",
-      "review:tests": "sonnet",
-      "review:security": "sonnet",
-      "review:architecture": "opus",
+      "review:correctness": ["sonnet", "medium"],
+      "review:quality": ["sonnet", "medium"],
+      "review:tests": ["sonnet", "medium"],
+      "review:security": ["sonnet", "medium"],
+      "review:architecture": ["fable", "high"],
     });
+  });
+
+  it("verifies findings on sonnet at medium", async () => {
+    const verdicts: Array<[string | undefined, string | undefined]> = [];
+    await runReview({ diffRef: "main" }, (prompt, opts) => {
+      if (isVerdict(prompt)) verdicts.push([opts.model, opts.effort]);
+      return oneRealFinding(prompt, opts);
+    });
+    expect(verdicts).toEqual([["sonnet", "medium"]]);
   });
 
   it("reports partial naming a reviewer that returned null, keeping the other verified findings", async () => {

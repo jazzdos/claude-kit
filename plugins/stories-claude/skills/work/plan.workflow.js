@@ -24,9 +24,9 @@ if (!Array.isArray(a) || a.length === 0) {
 // not a fallback (complexity is CLI-validated at create/update, so this only
 // fires on a mangled args payload).
 const TIER = {
-  routine: { model: 'sonnet', effort: 'high' },
-  hard: { model: 'opus', effort: 'xhigh' },
-  frontier: { model: 'fable', effort: 'xhigh' }, // human opt-in, made at board approval
+  routine: { model: 'sonnet', effort: 'medium' },
+  hard: { model: 'fable', effort: 'high' },
+  frontier: { model: 'fable', effort: 'high' }, // human opt-in, made at board approval
 }
 
 const PLAN_SCHEMA = {

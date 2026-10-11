@@ -206,7 +206,7 @@ describe("build-flow runner execution flow", () => {
     expect(r.findings?.length).toBeGreaterThan(0);
   });
 
-  it("escalates the fix model from sonnet to opus on the final round", async () => {
+  it("escalates the fix agent from sonnet/medium to fable/high on the final round", async () => {
     const dirty = { approved: false, findings: [{ severity: "critical", issue: "x" }] };
     const r = await runFlow(
       { batches: [[task("a")]], maxFixRounds: 2 },
@@ -217,17 +217,48 @@ describe("build-flow runner execution flow", () => {
         : clean,
     );
 
-    const fixModels = r.calls.filter((c) => c.role === "fix").map((c) => c.opts?.model);
-    expect(fixModels).toEqual(["sonnet", "opus"]);
+    const fixes = r.calls.filter((c) => c.role === "fix");
+    expect(fixes.map((c) => c.opts?.model)).toEqual(["sonnet", "fable"]);
+    expect(fixes.map((c) => c.opts?.effort)).toEqual(["medium", "high"]);
   });
 
-  it("escalates the quality review to opus only on the final batch", async () => {
+  it("escalates the quality review to fable/high only on the final batch", async () => {
     const r = await runFlow({ batches: [[task("a")], [task("b")]] }, allClean);
 
     expect(r.status).toBe("done");
     const quality = r.calls.filter((c) => c.role === "quality");
-    expect(quality.map((c) => c.opts?.model)).toEqual(["sonnet", "opus"]);
-    expect(quality.map((c) => c.opts?.effort)).toEqual(["high", "xhigh"]);
+    expect(quality.map((c) => c.opts?.model)).toEqual(["sonnet", "fable"]);
+    expect(quality.map((c) => c.opts?.effort)).toEqual(["medium", "high"]);
+  });
+
+  it("runs implementation, spec review and re-check on sonnet at medium", async () => {
+    const dirty = { approved: false, findings: [{ severity: "important", issue: "y" }] };
+    const r = await runFlow({ batches: [[task("a")]] }, (role, ctx) =>
+      role === "spec" && ctx.occurrence === 0 ? dirty : allClean(role, ctx),
+    );
+
+    expect(r.status).toBe("done");
+    for (const role of ["impl", "spec", "recheck"] as Role[]) {
+      const calls = r.calls.filter((c) => c.role === role);
+      expect(calls.length).toBeGreaterThan(0);
+      expect(calls.map((c) => c.opts?.model)).toEqual(calls.map(() => "sonnet"));
+      expect(calls.map((c) => c.opts?.effort)).toEqual(calls.map(() => "medium"));
+    }
+  });
+
+  it("escalates verify-fix from sonnet/medium to fable/high on the second round", async () => {
+    const failing = { passed: false, summary: "1 test failing", failures: [{ check: "t1", detail: "x != y" }] };
+    const r = await runFlow({ batches: [[task("a")]] }, (role, ctx) =>
+      role === "verify" ? (ctx.occurrence < 2 ? failing : verified) : allClean(role, ctx),
+    );
+
+    expect(r.status).toBe("done");
+    expect(r.calls.filter((c) => c.role === "verify")).toHaveLength(3);
+    const verifier = r.calls.filter((c) => c.role === "verify");
+    expect(verifier.map((c) => c.opts?.effort)).toEqual(["low", "low", "low"]);
+    const fixes = r.calls.filter((c) => c.role === "verify-fix");
+    expect(fixes.map((c) => c.opts?.model)).toEqual(["sonnet", "fable"]);
+    expect(fixes.map((c) => c.opts?.effort)).toEqual(["medium", "high"]);
   });
 
   it("runs the final verification once and dispatches a verify-fix on failure", async () => {

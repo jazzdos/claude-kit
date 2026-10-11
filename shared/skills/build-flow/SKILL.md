@@ -49,11 +49,11 @@ Otherwise it drives to `done`. Do not insert routine human checkpoints.
 
 | Stage | Tier | Effort |
 |---|---|---|
-| Implementation | worker | high |
-| Spec review | worker | high |
-| Quality review | worker (arbiter on the final batch — its cumulative diff review is the whole-run safety net) | high (xhigh on final) |
-| Fix (staged) | worker → arbiter | high |
-| Post-fix re-check (scoped to the findings) | worker | high |
+| Implementation | worker | medium |
+| Spec review | worker | medium |
+| Quality review | worker (arbiter on the final batch — its cumulative diff review is the whole-run safety net) | medium (high on final) |
+| Fix (staged) | worker → arbiter | medium (high on the arbiter round) |
+| Post-fix re-check (scoped to the findings) | worker | medium |
 | Final verification (full suite + lint, once per run) | verifier | low |
 
 Planning (kit:brainstorming, kit:writing-plans) runs in the main session — run those in a strong-reasoning session. The workflow pins the above regardless of session model. Reviews are deliberately worker-first: transcript analysis showed 69% of review gates return zero actionable findings, so reviews run on the worker tier; the arbiter tier is reserved for the one review whose diff covers the entire run. Exact model pinning is per-platform — see `launch.md` in this skill's directory.

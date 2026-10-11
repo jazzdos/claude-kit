@@ -13,7 +13,7 @@ Workflow({
 
 ## Model & Effort
 
-`review.workflow.js` pins per-dimension `model`/`effort` in its default `reviewDims`: correctness, quality, tests, and security run on Sonnet (high); architecture, the one deep-judgment safety net, runs on Opus (xhigh). Pass a custom `reviewDims` (`[{ key, focus, model, effort }, ...]`) to change this.
+`review.workflow.js` pins per-dimension `model`/`effort` in its default `reviewDims`: correctness, quality, tests, and security run on Sonnet (medium); architecture, the one deep-judgment safety net, runs on Fable (high). Verifiers run on Sonnet (medium). Pass a custom `reviewDims` (`[{ key, focus, model, effort }, ...]`) to change this.
 
 ## Handling the result
 

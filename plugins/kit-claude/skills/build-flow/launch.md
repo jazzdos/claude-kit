@@ -50,11 +50,11 @@ The `Workflow` tool takes per-call `model`/`effort`, which `build.workflow.js` p
 
 | Stage | Model | Effort |
 |---|---|---|
-| Implementation | Sonnet | high |
-| Spec review | Sonnet | high |
-| Quality review | Sonnet (Opus on the final batch — its cumulative diff review is the whole-run safety net) | high (xhigh on final) |
-| Fix (staged) | Sonnet → Opus | high |
-| Post-fix re-check (scoped to the findings) | Sonnet | high |
+| Implementation | Sonnet | medium |
+| Spec review | Sonnet | medium |
+| Quality review | Sonnet (Fable on the final batch — its cumulative diff review is the whole-run safety net) | medium (high on final) |
+| Fix (staged) | Sonnet → Fable | medium (high on the Fable round) |
+| Post-fix re-check (scoped to the findings) | Sonnet | medium |
 | Final verification (full suite + lint, once per run) | Sonnet | low |
 
 These are pinned in the workflow regardless of session model.
