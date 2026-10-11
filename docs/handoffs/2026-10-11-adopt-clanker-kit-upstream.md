@@ -100,3 +100,23 @@ Installed today: kit 1.3.0 and stories 0.2.0 from the cache at
 - All of those out-of-repo changes are left uncommitted in their repos.
 - Worktree `.worktrees/adopt-clanker-kit-upstream` is still present; use
   kit:worktree-cleanup when ready.
+
+## Follow-up 2026-10-11: kit installed with no skills
+
+The kit update above landed a cache dir with no skills. Cause and fix
+are in `docs/decisions/2026-10-11-drop-stories-kit-dependency.md`: the
+stories manifest's `dependencies` on kit made Claude Code install kit
+from a sparse git-subdir checkout where the `shared/` symlinks dangle.
+Branch `fix/drop-stories-kit-dependency` removes the field, bumps
+stories to 0.6.1 and adds a guard test.
+
+Remaining steps (need Jarrod's ask):
+
+1. Merge the branch to `main`, push, tag `stories--v0.6.1`.
+2. On lux: `claude plugin marketplace update jazzdos-kit` then
+   `claude plugin update stories@jazzdos-kit`, restart.
+3. The live kit install at `kit/1.6.0-d163944273cc` was repaired by hand
+   (symlinks dereferenced from the marketplace clone) and is complete;
+   it stays until the next kit bump. Optional afterwards:
+   `claude plugin uninstall kit@jazzdos-kit` and
+   `claude plugin install kit@jazzdos-kit` to land a clean `kit/1.6.0`.

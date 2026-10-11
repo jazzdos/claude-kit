@@ -83,3 +83,16 @@ describe("fork: no opus/xhigh pins on the Claude side", () => {
     expect(usingKit).toContain(sanctioned);
   });
 });
+
+describe("fork: stories declares no plugin dependencies", () => {
+  // Claude Code 2.1.296 resolves a plugin that another installed plugin depends on
+  // through a git-subdir source at the highest `<plugin>--vX.Y.Z` tag satisfying the
+  // range. That source checks out plugins/<plugin>-claude alone, so its symlinks into
+  // shared/ dangle and the copy drops them: `claude plugin update kit` then installs a
+  // kit with no skills (2026-10-11). Upstream carries the dependency but pushes no tags;
+  // this fork tags every release, so the dependency must stay out of the manifest.
+  it("plugins/stories-claude/.claude-plugin/plugin.json has no dependencies field", () => {
+    const manifest = JSON.parse(read(resolve(STORIES_CLAUDE_ROOT, ".claude-plugin/plugin.json")));
+    expect(manifest.dependencies).toBeUndefined();
+  });
+});
