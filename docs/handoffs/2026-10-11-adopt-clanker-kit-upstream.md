@@ -120,3 +120,11 @@ Remaining steps (need Jarrod's ask):
    it stays until the next kit bump. Optional afterwards:
    `claude plugin uninstall kit@jazzdos-kit` and
    `claude plugin install kit@jazzdos-kit` to land a clean `kit/1.6.0`.
+
+Completed 2026-10-11: merged to `main` as f9cd800 (merge commit, tree
+identical to the branch) and tagged `stories--v0.6.1` locally.
+Post-merge `bun run test`: 1189 pass, 17 skip, 0 fail; `claude plugin
+validate` exit 0 for the marketplace and the three Claude plugins. Still
+pending Jarrod's ask: push main and the tag, then steps 2 and 3 above.
+Worktree `.worktrees/drop-stories-kit-dependency` is still present; use
+kit:worktree-cleanup when ready.
