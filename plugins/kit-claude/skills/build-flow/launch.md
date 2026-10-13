@@ -52,8 +52,8 @@ The `Workflow` tool takes per-call `model`/`effort`, which `build.workflow.js` p
 |---|---|---|
 | Implementation | Sonnet | medium |
 | Spec review | Sonnet | medium |
-| Quality review | Sonnet (Fable on the final batch — its cumulative diff review is the whole-run safety net) | medium (high on final) |
-| Fix (staged) | Sonnet → Fable | medium (high on the Fable round) |
+| Quality review | Sonnet (Opus on the final batch — its cumulative diff review is the whole-run safety net) | medium (xhigh on final) |
+| Fix (staged) | Sonnet → Opus | medium (xhigh on the Opus round) |
 | Post-fix re-check (scoped to the findings) | Sonnet | medium |
 | Final verification (full suite + lint, once per run) | Sonnet | low |
 

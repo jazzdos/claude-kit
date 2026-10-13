@@ -37,7 +37,7 @@ When you want an independent review of a diff:
 3. **Launch it.** Read `launch.md` in this skill's directory for your harness's exact launch mechanics, then extract the runner's return — `{ diffRef, findings }` — from the completion payload as described there.
 4. **Act on the consolidated findings** (below).
 
-The default dimensions are correctness, quality, tests, security, and architecture; override `reviewDims` to focus or extend the review. Architecture runs on the arbiter tier (high); correctness, quality, tests, and security run on the worker tier (medium). Exact model pinning is per-platform — see `launch.md` in this skill's directory.
+The default dimensions are correctness, quality, tests, security, and architecture; override `reviewDims` to focus or extend the review. Architecture runs on the arbiter tier (xhigh); correctness, quality, tests, and security run on the worker tier (medium). Exact model pinning is per-platform — see `launch.md` in this skill's directory.
 
 ## Acting on Findings
 

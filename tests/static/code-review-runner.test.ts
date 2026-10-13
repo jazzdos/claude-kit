@@ -77,7 +77,7 @@ describe("code-review runner", () => {
     ]);
   });
 
-  it("pins the architecture dimension to fable/high and the rest to sonnet/medium", async () => {
+  it("pins the architecture dimension to opus/xhigh and the rest to sonnet/medium", async () => {
     const seen: Record<string, [string | undefined, string | undefined]> = {};
     await runReview({}, (prompt, opts) => {
       if (isReview(prompt)) seen[opts.label!] = [opts.model, opts.effort];
@@ -88,7 +88,7 @@ describe("code-review runner", () => {
       "review:quality": ["sonnet", "medium"],
       "review:tests": ["sonnet", "medium"],
       "review:security": ["sonnet", "medium"],
-      "review:architecture": ["fable", "high"],
+      "review:architecture": ["opus", "xhigh"],
     });
   });
 

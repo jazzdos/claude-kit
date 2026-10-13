@@ -123,9 +123,9 @@ describe("planner runners: shared contract", () => {
 });
 
 describe("planner runners: tier mapping", () => {
-  it("claude pins model and effort per complexity: routine sonnet/medium, hard and frontier fable/high", async () => {
+  it("claude pins model and effort per complexity: routine sonnet/medium, hard and frontier opus/xhigh", async () => {
     const { calls } = await runClaude([story("st-0001"), story("st-0002", "hard"), story("st-0003", "frontier")], () => planned);
-    expect(calls.map((c) => [c.model, c.effort])).toEqual([["sonnet", "medium"], ["fable", "high"], ["fable", "high"]]);
+    expect(calls.map((c) => [c.model, c.effort])).toEqual([["sonnet", "medium"], ["opus", "xhigh"], ["opus", "xhigh"]]);
   });
 
   it("omp names one agent per complexity, with hyphenated labels, a schema, no model, and a bounded wait", async () => {

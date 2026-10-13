@@ -51,8 +51,8 @@ Otherwise it drives to `done`. Do not insert routine human checkpoints.
 |---|---|---|
 | Implementation | worker | medium |
 | Spec review | worker | medium |
-| Quality review | worker (arbiter on the final batch — its cumulative diff review is the whole-run safety net) | medium (high on final) |
-| Fix (staged) | worker → arbiter | medium (high on the arbiter round) |
+| Quality review | worker (arbiter on the final batch — its cumulative diff review is the whole-run safety net) | medium (xhigh on final) |
+| Fix (staged) | worker → arbiter | medium (xhigh on the arbiter round) |
 | Post-fix re-check (scoped to the findings) | worker | medium |
 | Final verification (full suite + lint, once per run) | verifier | low |
 

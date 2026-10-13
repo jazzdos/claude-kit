@@ -107,8 +107,8 @@ A subagent fleet's cost is agent count × context size × model rate — dominat
 |---|---|
 | Scouts, search, file surveys, mechanical transforms, running tests | fast/cheap tier (e.g. Haiku-class), effort low |
 | Implementation, review, fixing | standard tier, effort high |
-| Hardest judgment calls (final quality gate, architecture, adversarial verify of critical findings) | fable, effort high |
-| fable | standing request: substitute for every opus/xhigh stage (fable, effort high) |
+| Hardest judgment calls (final quality gate, architecture, adversarial verify of critical findings) | opus, effort xhigh |
+| fable | orchestrator (main session) only, never a subagent or workflow stage; when fable usage is exhausted, the orchestrator falls back to opus, effort xhigh |
 
 Kit's bundled workflows (build-flow, code-review) already pin models per stage. This table governs everything else — one-off Agent calls and workflows you author on the fly. Every agent also keeps its own context lean: scoped test runs with quiet reporters, partial file reads, filtered command output.
 

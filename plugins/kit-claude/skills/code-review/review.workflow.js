@@ -13,14 +13,14 @@ const diffRef = args.diffRef ?? 'main'
 const ledgerText = args.ledger ? JSON.stringify(args.ledger) : 'none'
 // Sonnet-first: measured across 6 weeks of runs, 69% of review agents return
 // zero actionable findings — a top-tier model everywhere was paying frontier rates
-// for "LGTM". Architecture keeps Fable (high) as the one deep-judgment safety net;
+// for "LGTM". Architecture keeps Opus (xhigh) as the one deep-judgment safety net;
 // the other four dimensions and the verifiers run Sonnet at medium.
 const DIMS = args.reviewDims ?? [
   { key: 'correctness', focus: 'logic errors, bugs, broken edge cases, race conditions', model: 'sonnet', effort: 'medium' },
   { key: 'quality', focus: 'separation of concerns, DRY, naming, error handling, maintainability', model: 'sonnet', effort: 'medium' },
   { key: 'tests', focus: 'tests verify real behavior (not mocks), edge cases covered, all passing', model: 'sonnet', effort: 'medium' },
   { key: 'security', focus: 'injection, auth, secrets, unsafe operations', model: 'sonnet', effort: 'medium' },
-  { key: 'architecture', focus: 'plan/design alignment, module boundaries, sound abstractions, scalability', model: 'fable', effort: 'high' },
+  { key: 'architecture', focus: 'plan/design alignment, module boundaries, sound abstractions, scalability', model: 'opus', effort: 'xhigh' },
 ]
 
 const FINDINGS_SCHEMA = {
