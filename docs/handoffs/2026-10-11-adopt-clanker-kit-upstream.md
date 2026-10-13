@@ -137,3 +137,27 @@ broken-symlink skips). `kit/1.6.0` has 17 SKILL.md, no symlinks, and is
 byte-identical to the marketplace source and to the hand repair;
 session-start.sh exits 0. The hand-repaired dir is marked orphaned and
 left for Claude Code to clean. Restart required to apply.
+
+## Follow-up 2026-10-13: judgement pins back on opus/xhigh
+
+The fable/high re-application described under "What this branch does"
+is superseded. Under the 2026-10-13 model policy (standards a42a4a5)
+fable is the orchestrator only, judgement stages run on opus/xhigh, and
+the sonnet/medium rule stays. Details are in
+`docs/decisions/2026-10-13-restore-opus-judgement-pins.md`.
+`tests/static/fork-pins.test.ts` now fails on a fable pin or a 'high'
+effort instead of on opus or xhigh.
+
+Merged to `main` as d711506 and pushed with tags `kit--v1.6.1` and
+`stories--v0.6.2`. Post-merge `bun run test`: 1193 pass, 17 skip, 0
+fail. On lux, kit was updated from 1.6.0 to 1.6.1 and stories from 0.6.1
+to 0.6.2. `kit/1.6.1` has 17 SKILL.md and no symlinks, and
+session-start.sh exits 0. Restart required to apply.
+
+Known gap: `kit:code-reviewer` keeps upstream's `model: inherit`, so an
+Agent call that sets no model runs it on the session model.
+
+Cleanup: worktrees `adopt-clanker-kit-upstream`,
+`drop-stories-kit-dependency` and `restore-opus-judgement-pins` are
+removed. Their branches, plus the merged `feature/standards-triad` and
+`fix/effort-pin-tests`, are deleted locally. None of them were on origin.
