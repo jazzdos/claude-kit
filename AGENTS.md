@@ -8,10 +8,14 @@ shousper/clanker-kit (formerly shousper/claude-kit). It hosts the `kit`,
 `writing` is listed but unused (its forced output style conflicts with the
 writing pillar in the standards repo).
 
-The fork's one rule: every opus/xhigh stage upstream runs on fable/high
-here, and every sonnet/high stage runs at sonnet/medium. Verifier stages
-stay sonnet/low. `tests/static/fork-pins.test.ts` fails if an upstream
-merge reintroduces an opus or xhigh pin.
+The fork's pin rules (2026-10-13): fable is the orchestrator (main
+session) only, so no bundled workflow stage pins it. Judgement stages
+(final-batch quality review, fix and verify-fix escalation, code-review
+architecture, hard and frontier story planning) run on opus/xhigh, and
+every sonnet/high stage upstream runs at sonnet/medium. Build-flow's
+final verification stays sonnet/low. `tests/static/fork-pins.test.ts`
+fails if an upstream merge reintroduces a fable pin or a 'high' effort.
+See `docs/decisions/2026-10-13-restore-opus-judgement-pins.md`.
 
 See README.md (upstream text) and shared/stories/README.md.
 

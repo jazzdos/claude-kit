@@ -264,10 +264,10 @@ for (let b = startBatch; b < batches.length; b++) {
   const finalBatch = b === batches.length - 1
   const [spec, quality] = await parallel([
     () => stage(`spec:b${b + 1}`, specPrompt(batch), { phase: 'Review', model: 'sonnet', effort: 'medium', schema: REVIEW_SCHEMA }),
-    // Quality reviews run on Sonnet at medium; the final batch escalates to Fable at high — its
+    // Quality reviews run on Sonnet at medium; the final batch escalates to Opus at xhigh — its
     // `git diff main` covers the whole run, so this is the run-level safety net.
     () => stage(`quality:b${b + 1}`, qualityPrompt(batch), {
-      phase: 'Review', model: finalBatch ? 'fable' : 'sonnet', effort: finalBatch ? 'high' : 'medium', schema: REVIEW_SCHEMA,
+      phase: 'Review', model: finalBatch ? 'opus' : 'sonnet', effort: finalBatch ? 'xhigh' : 'medium', schema: REVIEW_SCHEMA,
     }),
   ])
   for (const r of [spec, quality]) if (!r.ok) return blocked(b, stageFailure(r))
@@ -278,9 +278,9 @@ for (let b = startBatch; b < batches.length; b++) {
       return blocked(b, `Review unresolved after ${MAX_FIX_ROUNDS} fix round(s)`, { findings })
     }
     phase('Fix')
-    const fixModel = round < MAX_FIX_ROUNDS - 1 ? 'sonnet' : 'fable' // staged escalation
+    const fixModel = round < MAX_FIX_ROUNDS - 1 ? 'sonnet' : 'opus' // staged escalation
     log(`Batch ${b + 1} fix round ${round + 1} (${fixModel}): ${findings.length} finding(s)`)
-    const fix = await stage(`fix:b${b + 1}:r${round + 1}`, fixPrompt(batch, findings), { phase: 'Fix', model: fixModel, effort: fixModel === 'fable' ? 'high' : 'medium', schema: IMPL_SCHEMA })
+    const fix = await stage(`fix:b${b + 1}:r${round + 1}`, fixPrompt(batch, findings), { phase: 'Fix', model: fixModel, effort: fixModel === 'opus' ? 'xhigh' : 'medium', schema: IMPL_SCHEMA })
     if (!fix.ok) return blocked(b, stageFailure(fix), { findings })
     if (fix.value.needsHumanInput) return blocked(b, fix.value.needsHumanInput.reason, { findings })
     round++
@@ -307,7 +307,7 @@ for (let v = 0; ; v++) {
     return blocked(batches.length - 1, `Final verification still failing after ${v} fix round(s): ${verification.summary}`, { findings: verification.failures })
   }
   log(`Final verification failed (${verification.failures?.length ?? 0} failure(s)) — fix round ${v + 1}`)
-  const fix = await stage(`verify-fix:r${v + 1}`, verifyFixPrompt(verification), { phase: 'Verify', model: v === 0 ? 'sonnet' : 'fable', effort: v === 0 ? 'medium' : 'high', schema: IMPL_SCHEMA })
+  const fix = await stage(`verify-fix:r${v + 1}`, verifyFixPrompt(verification), { phase: 'Verify', model: v === 0 ? 'sonnet' : 'opus', effort: v === 0 ? 'medium' : 'xhigh', schema: IMPL_SCHEMA })
   if (!fix.ok) return blocked(batches.length - 1, stageFailure(fix), { findings: verification.failures })
   if (fix.value.needsHumanInput) return blocked(batches.length - 1, fix.value.needsHumanInput.reason, { findings: verification.failures })
 }
