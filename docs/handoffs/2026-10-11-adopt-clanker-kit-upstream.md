@@ -161,3 +161,31 @@ Cleanup: worktrees `adopt-clanker-kit-upstream`,
 `drop-stories-kit-dependency` and `restore-opus-judgement-pins` are
 removed. Their branches, plus the merged `feature/standards-triad` and
 `fix/effort-pin-tests`, are deleted locally. None of them were on origin.
+
+## Follow-up 2026-10-29: out-of-repo loose ends closed
+
+Checked on lux. `story doctor` had already run in all nine stories
+projects: each has `.agents/shousper-stories/config.json`, and meta and
+pd-revision carry a single `.agents/shousper-stories/local/` ignore
+line, no duplicate. pd-revision, hiking-trip and rl-tba now live under
+`~/Documents/ZZ. Archive/`; the standards inventory (the rl-tba row in
+`inventory/projects.md` and `inventory/lux.md` line 26) still lists
+rl-tba as active at `~/Documents/rl-tba`.
+
+The `kit:code-standards` line was already gone from
+wa-mine-rehab-monitor, tec-marker-validation and rl-tba.
+`env-health/Bushfire` is its own repository (origin
+jazzdos/sw-wa-bushfire-pipeline, ignored by the env-health parent at
+`.gitignore:5`); its line was removed today as commit 889cc15 on
+`feature/standards-triad`, the branch that owns the current CLAUDE.md.
+Not pushed. `pillars/claude-md.md` and `~/.claude/notes/known-fixes.md`
+are current; the only remaining mentions of the skill in the standards
+repo are historical story records under `stories/`.
+
+Still open: upstream shousper/clanker-kit is three commits ahead of
+main (kit 1.7.0, 2026-10-27): code standards split into gated scope,
+core and project files, a new `state-cleanup.sh` hook, and rewrites of
+`format-files.sh` and `standards-gate.sh`, 60 files in all. No pin file
+is touched; the upstream stories manifest still carries the kit
+`dependencies` field the fork drops. The two "Flagged for later" items
+above stand.
