@@ -8,6 +8,11 @@ shousper/clanker-kit (formerly shousper/claude-kit). It hosts the `kit`,
 `writing` is listed but unused (its forced output style conflicts with the
 writing pillar in the standards repo).
 
+Paused 2026-10-29: `kit` and `stories` now install from upstream's
+`shousper-kit` marketplace with upstream's pins as shipped. See
+`docs/decisions/2026-10-29-adopt-upstream-directly.md`. The notes below
+describe the fork as it stands if it is revived.
+
 The fork's pin rules (2026-10-13): fable is the orchestrator (main
 session) only, so no bundled workflow stage pins it. Judgement stages
 (final-batch quality review, fix and verify-fix escalation, code-review
@@ -62,9 +67,10 @@ See README.md (upstream text) and shared/stories/README.md.
   highest `kit--vX.Y.Z` tag, where the symlinks into `shared/` dangle and
   are dropped, leaving a kit with no skills. Guarded by
   `tests/static/fork-pins.test.ts`; see `docs/decisions/`.
-- Install `kit@jazzdos-kit` and `stories@jazzdos-kit` from this
-  marketplace only, never from `shousper-kit`. The README Install block
-  is upstream text that still names shousper.
+- Since 2026-10-29 `kit` and `stories` install from upstream's
+  `shousper-kit` marketplace (shousper/clanker-kit), not from here; the
+  README Install block is upstream text and is now the live procedure.
+  Reviving the fork means reinstalling from `jazzdos/claude-kit`.
 - Edit `plugins/` and `shared/` here, never the installed copy under the
   Claude plugin cache directory (`~/.claude/plugins/cache/`); merge
   first, then update the installed plugin.

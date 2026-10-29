@@ -189,3 +189,12 @@ core and project files, a new `state-cleanup.sh` hook, and rewrites of
 is touched; the upstream stories manifest still carries the kit
 `dependencies` field the fork drops. The two "Flagged for later" items
 above stand.
+
+## Follow-up 2026-10-29: fork paused, upstream adopted directly
+
+Jarrod chose to adopt shousper/clanker-kit as shipped rather than carry
+the pins. On lux, kit 1.7.0 and stories 0.6.0 are installed from the
+`shousper-kit` marketplace and the `jazzdos-kit` plugins and marketplace
+are removed. This project is `status: paused`. Luminosity is still on
+the jazzdos-kit plugins until its running session finishes. Decision
+and revival steps: `docs/decisions/2026-10-29-adopt-upstream-directly.md`.

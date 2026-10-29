@@ -1,5 +1,5 @@
 profile: research-code
-status: active
+status: paused
 standards: ~/Documents/standards/STANDARDS.md
 
 @AGENTS.md
